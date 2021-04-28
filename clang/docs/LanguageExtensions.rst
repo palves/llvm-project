@@ -3379,16 +3379,62 @@ Specifying an attribute for multiple declarations (#pragma clang attribute)
 ===========================================================================
 
 The ``#pragma clang attribute`` directive can be used to apply an attribute to
-multiple declarations. The ``#pragma clang attribute push`` variation of the
-directive pushes a new "scope" of ``#pragma clang attribute`` that attributes
-can be added to. The ``#pragma clang attribute (...)`` variation adds an
-attribute to that scope, and the ``#pragma clang attribute pop`` variation pops
-the scope. You can also use ``#pragma clang attribute push (...)``, which is a
-shorthand for when you want to add one attribute to a new scope. Multiple push
-directives can be nested inside each other.
+multiple declarations.
 
 The attributes that are used in the ``#pragma clang attribute`` directives
 can be written using the GNU-style syntax:
+
+.. code-block:: c++
+
+  #pragma clang attribute (__attribute__((annotate("custom"))), apply_to = function)
+
+  void function1(); // These functions now both ...
+  void function2(); // ... have the annotate("custom") attribute.
+
+The attributes can also be written using the C++11 style syntax:
+
+.. code-block:: c++
+
+  #pragma clang attribute ([[noreturn]], apply_to = function)
+
+  void function(); // The function now has the [[noreturn]] attribute
+
+The ``__declspec`` style syntax is also supported:
+
+.. code-block:: c++
+
+  #pragma clang attribute (__declspec(dllexport), apply_to = function)
+
+  void function(); // The function now has the __declspec(dllexport) attribute
+
+The ``#pragma clang attribute push`` variation of the directive pushes
+a new "scope" of ``#pragma clang attribute`` that attributes can be
+added to.  The ``#pragma clang attribute pop`` variation pops the
+scope.  Multiple push directives can be nested inside each other.
+Attributes added to outer scopes continue to apply in inner scopes.
+
+.. code-block:: c++
+
+  #pragma clang attribute push
+  #pragma clang attribute (__attribute__((annotate("custom1"))), apply_to = function)
+
+  void function1(); // This function has the annotate("custom1") attribute.
+
+  #pragma clang attribute push
+  #pragma clang attribute (__attribute__((annotate("custom2"))), apply_to = function)
+
+  void function2(); // This function has both annotate("custom1") and annotate("custom2") attributes.
+
+  #pragma clang attribute pop // pops "custom1" scope
+
+  #pragma clang attribute pop // pops "custom2" scope
+
+  void function3(); // This function does not have the annotate("custom1") or annotate("custom2") attributes.
+
+You can also use ``#pragma clang attribute push (...)``, which is a
+shorthand for when you want to add one attribute to a new scope.  A
+single push directive accepts only one attribute regardless of the
+attribute syntax used.
 
 .. code-block:: c++
 
@@ -3397,29 +3443,6 @@ can be written using the GNU-style syntax:
   void function(); // The function now has the annotate("custom") attribute
 
   #pragma clang attribute pop
-
-The attributes can also be written using the C++11 style syntax:
-
-.. code-block:: c++
-
-  #pragma clang attribute push ([[noreturn]], apply_to = function)
-
-  void function(); // The function now has the [[noreturn]] attribute
-
-  #pragma clang attribute pop
-
-The ``__declspec`` style syntax is also supported:
-
-.. code-block:: c++
-
-  #pragma clang attribute push (__declspec(dllexport), apply_to = function)
-
-  void function(); // The function now has the __declspec(dllexport) attribute
-
-  #pragma clang attribute pop
-
-A single push directive accepts only one attribute regardless of the syntax
-used.
 
 Because multiple push directives can be nested, if you're writing a macro that
 expands to ``_Pragma("clang attribute")`` it's good hygiene (though not
